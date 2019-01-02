@@ -14,5 +14,5 @@ The name of the bucket that will be created and managed by the script. This name
 ### AccountIds
 A comma delimted list of account ids that will be able to read/write/access the bucket.
 
-```Example: ```111122223333,222233334444,333344445555```
+```Example: 111122223333,222233334444,333344445555```
 
