@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: CloudFormation template bucket - https://github.com/oramco/cfn-templatebucket
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: The name of the bucket that will be created to contain CloudFormation templates
+
+  AccountIds:
+    Type: CommaDelimitedList
+    Description: Comma delimited list of account ids that should be able to access the bucket
+
+Resources:
+  TemplateBucketPolicy: 
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref TemplateBucket
+      PolicyDocument: 
+        Statement: 
+          -             
+            Effect: Allow
+            Action: 
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:PutObject
+            Resource: !Sub 'arn:aws:s3:::${BucketName}/*'
+            Principal: 
+              AWS: !Split
+                - ','
+                - !Sub
+                  - 'arn:aws:iam::${inner}:root'
+                  - inner: !Join
+                    - ':root,arn:aws:iam::'
+                    - Ref: AccountIds
+          -             
+            Effect: Allow
+            Action: 
+              - s3:ListBucket
+            Resource: !Sub 'arn:aws:s3:::${BucketName}'
+            Principal: 
+              AWS: !Split
+                - ','
+                - !Sub
+                  - 'arn:aws:iam::${inner}:root'
+                  - inner: !Join
+                    - ':root,arn:aws:iam::'
+                    - Ref: AccountIds
+
+  TemplateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - 
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      AccessControl: Private      
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireIncompleteUploadRule
+          Status: Enabled
+          AbortIncompleteMultipartUpload:
+            DaysAfterInitiation: 7
+
+Outputs:  
+  TemplateDomainName:
+    Value: !GetAtt [TemplateBucket, DomainName]
+    Description: DomainName for bucket
